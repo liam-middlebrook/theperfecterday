@@ -9,6 +9,8 @@
 GLFWwindow *window;
 GLuint mainShader;
 
+GLuint waterVAO;
+GLuint waterVBO;
 
 // Declare some functions
 
@@ -30,12 +32,41 @@ int main(int argc, char** argv)
 
     glewInit();
 
-    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+    glEnable(GL_DEBUG_OUTPUT);
     glDebugMessageCallback(GLDebugMessageCallback, NULL);
 
     mainShader = loadShader("vert.glsl", "frag.glsl");
 
+    glUseProgram(mainShader);
+
     glClearColor(100.0f/ 255.0f, 149.0f/255.0f, 237.0f/255.0f, 1.0f);
+
+
+    glGenVertexArrays(1, &waterVAO);
+    glBindVertexArray(waterVAO);
+
+    glGenBuffers(1, &waterVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, waterVBO);
+
+    GLfloat waterQuad[6*5] =
+    {
+        // x y z u v
+        -1.0f, -1.0f, +0.0f, +0.0f, +0.0f,
+        -1.0f, +1.0f, +0.0f, +0.0f, +1.0f,
+        +1.0f, +1.0f, +0.0f, +1.0f, +1.0f,
+
+        +1.0f, +1.0f, +0.0f, +1.0f, +1.0f,
+        +1.0f, -1.0f, +0.0f, +1.0f, +0.0f,
+        -1.0f, -1.0f, +0.0f, +0.0f, +0.0f,
+    };
+    glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 6  * 5, waterQuad, GL_STATIC_DRAW);
+
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 5, 0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 5, (const GLvoid*)(sizeof(GLfloat) * 3));
+    glDisableVertexAttribArray(1);
+    glDisableVertexAttribArray(1);
     while (!glfwWindowShouldClose(window))
     {
         int count;
@@ -46,6 +77,12 @@ int main(int argc, char** argv)
         {
             break;
         }
+
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glDisableVertexAttribArray(1);
+        glDisableVertexAttribArray(1);
 
         // Update Input & Graphics
         glfwPollEvents();
@@ -88,9 +125,6 @@ GLuint loadShader(const char* vertLoc, const char* fragLoc)
     glAttachShader(shaderProg, vertexShader);
     glAttachShader(shaderProg, fragmentShader);
     glLinkProgram(shaderProg);
-
-    glGetShaderiv(shaderProg, GL_LINK_STATUS, &status);
-    printf("Shader Link Status %d\n", status);
 
     return shaderProg;
 }

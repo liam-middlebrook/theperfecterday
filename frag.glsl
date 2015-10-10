@@ -2,10 +2,6 @@
 
 in vec2 UV;
 
-uniform sampler2D tex;
-
-uniform vec4 tint;
-
 void main() {
-    gl_FragColor = texture(tex, UV) * tint;
+    gl_FragColor = vec4(UV, 0.5, 1.0);
 }
