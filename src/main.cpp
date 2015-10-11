@@ -21,6 +21,8 @@
 
 GLuint loadShader(const char* vertLoc, const char* fragLoc);
 GLuint loadTexture(const char* fileLoc);
+GLfloat *genTerrainData(int *count, int width, int height);
+
 void APIENTRY GLDebugMessageCallback(GLenum source, GLenum type, GLuint id,
                             GLenum severity, GLsizei length,
                             const GLchar *msg, void *data);
@@ -40,6 +42,11 @@ int main(int argc, char** argv)
 
     GLuint waterTex;
     GLuint waterMap;
+
+    //GLuint terrainVAO;
+    GLuint terrainVBO;
+
+    GLuint terrainTex;
 
     double elapsedTime;
     // Declare some functions
@@ -65,7 +72,6 @@ int main(int argc, char** argv)
 
     mainShader = loadShader("vert.glsl", "frag.glsl");
     waterShader = loadShader("water.vert.glsl", "water.frag.glsl");
-    mainShader = loadShader("vert.glsl", "frag.glsl");
     glUseProgram(waterShader);
 
     glClearColor(100.0f/ 255.0f, 149.0f/255.0f, 237.0f/255.0f, 1.0f);
@@ -105,8 +111,31 @@ int main(int argc, char** argv)
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(1);
 
+    //glGenVertexArrays(1, &terrainVAO);
+    //glBindVertexArray(terrainVAO);
+
+    glGenBuffers(1, &terrainVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, terrainVBO);
+
+    GLfloat *terrainData;
+    int terrainDataCount;
+
+    terrainData = genTerrainData(&terrainDataCount, 30, 30);
+
+    glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * terrainDataCount, terrainData, GL_STATIC_DRAW);
+
+    free(terrainData);
+
+    glUseProgram(waterShader);
     glUniformMatrix4fv(
         glGetUniformLocation(waterShader, "projectionMatrix"),
+        1,
+        GL_FALSE,
+        glm::value_ptr(projectionMatrix));
+
+    glUseProgram(mainShader);
+    glUniformMatrix4fv(
+        glGetUniformLocation(mainShader, "projectionMatrix"),
         1,
         GL_FALSE,
         glm::value_ptr(projectionMatrix));
@@ -137,6 +166,8 @@ int main(int argc, char** argv)
 
         glm::mat4 viewMatrix = camera->ViewMat();
 
+        glUseProgram(waterShader);
+
         glUniformMatrix4fv(
             glGetUniformLocation(waterShader, "viewMatrix"),
             1,
@@ -149,6 +180,18 @@ int main(int argc, char** argv)
             0.0f);
         printf("%f\n", glfwGetTime());
 
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glDisableVertexAttribArray(1);
+        glDisableVertexAttribArray(1);
+
+        glUseProgram(mainShader);
+        glUniformMatrix4fv(
+            glGetUniformLocation(mainShader, "viewMatrix"),
+            1,
+            GL_FALSE,
+            glm::value_ptr(viewMatrix));
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
         glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -326,4 +369,87 @@ GLuint loadTexture(const char* fileLoc)
 	FreeImage_Unload(pImage);
 
 	return texture;
+}
+
+GLfloat *genTerrainData(int *count, int width, int height)
+{
+    *count = 5 * (width) * 6 * height * 4;
+    GLfloat *data = (GLfloat*)malloc(sizeof(GLfloat) * *count);
+
+    if( data == NULL )
+    {
+        printf("FUCK\n");
+        return 0;
+    }
+
+    int idx = 0;
+    for (float y = -1.0f; y < 1.0f; y += 1.0f / height)
+    {
+        for (float x = -1.0f; x < 1.0f; x += 1.0f / width)
+        {
+            // x y z u v
+            //
+            // 1 3
+            // 2
+            //  ^ v same tirangle
+            //   2
+            // 1 3
+            data[idx + 0] = x;
+            data[idx + 1] = 0.0f;
+            data[idx + 2] = y;
+
+            data[idx + 3] = (x + 1.0f) / 2.0f;
+            data[idx + 4] = (y + 1.0f) / 2.0f;
+
+            idx += 5;
+
+            data[idx + 0] = x;
+            data[idx + 1] = 0.0f;
+            data[idx + 2] = y + 1.0f / height;
+
+            data[idx + 3] = (x + 1.0f) / 2.0f;
+            data[idx + 4] = (y + 1.0f + (1.0f / height)) / 2.0f;
+
+            idx += 5;
+
+            data[idx + 0] = x + 1.0f / width;
+            data[idx + 1] = 0.0f;
+            data[idx + 2] = y;
+
+            data[idx + 3] = (x + 1.0f + (1.0f / width)) / 2.0f;
+            data[idx + 4] = (y + 1.0f) / 2.0f;
+
+            idx += 5;
+
+            data[idx + 0] = x;
+            data[idx + 1] = 0.0f;
+            data[idx + 2] = y + 1.0f / height;
+
+            data[idx + 3] = (x + 1.0f) / 2.0f;
+            data[idx + 4] = (y + 1.0f + (1.0f / height)) / 2.0f;
+
+            idx += 5;
+
+            data[idx + 0] = x + 1.0f / width;
+            data[idx + 1] = 0.0f;
+            data[idx + 2] = y;
+
+            data[idx + 3] = (x + 1.0f + (1.0f / width)) / 2.0f;
+            data[idx + 4] = (y + 1.0f) / 2.0f;
+
+            idx += 5;
+
+            data[idx + 0] = x + 1.0f / width;
+            data[idx + 1] = 0.0f;
+            data[idx + 2] = y + 1.0f / height;
+
+            data[idx + 3] = (x + 1.0f + (1.0f / width)) / 2.0f;
+            data[idx + 4] = (y + 1.0f + (1.0f / height)) / 2.0f;
+
+            idx += 5;
+
+            printf("%d out of %d\n", idx, *count);
+        }
+    }
+    return data;
 }
