@@ -9,6 +9,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <libnoise/noise.h>
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -19,6 +21,8 @@
 //       Pivot to board game with 3D printed terrain
 //       Get maximum hacakthon points
 
+
+    noise::module::Perlin perlinNoise;
 GLuint loadShader(const char* vertLoc, const char* fragLoc);
 GLuint loadTexture(const char* fileLoc);
 GLfloat *genTerrainData(int *count, int width, int height);
@@ -64,6 +68,8 @@ int main(int argc, char** argv)
     glewInit();
 
     camera = new Camera(window);
+
+    glEnable(GL_DEPTH_TEST);
 
     glEnable(GL_DEBUG_OUTPUT);
     glDebugMessageCallback(GLDebugMessageCallback, NULL);
@@ -120,7 +126,7 @@ int main(int argc, char** argv)
     GLfloat *terrainData;
     int terrainDataCount;
 
-    terrainData = genTerrainData(&terrainDataCount, 30, 30);
+    terrainData = genTerrainData(&terrainDataCount, 5, 30);
 
     glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * terrainDataCount, terrainData, GL_STATIC_DRAW);
 
@@ -178,10 +184,14 @@ int main(int argc, char** argv)
             0.3f * elapsedTime,
             0.4f * elapsedTime,
             0.0f);
-        printf("%f\n", glfwGetTime());
+        //printf("%f\n", glfwGetTime());
+
+        glBindBuffer(GL_ARRAY_BUFFER, waterVBO);
 
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 5, 0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 5, (const GLvoid*)(sizeof(GLfloat) * 3));
         glDrawArrays(GL_TRIANGLES, 0, 6);
         glDisableVertexAttribArray(1);
         glDisableVertexAttribArray(1);
@@ -192,16 +202,19 @@ int main(int argc, char** argv)
             1,
             GL_FALSE,
             glm::value_ptr(viewMatrix));
+        glBindBuffer(GL_ARRAY_BUFFER, terrainVBO);
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 5, 0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 5, (const GLvoid*)(sizeof(GLfloat) * 3));
+        glDrawArrays(GL_TRIANGLES, 0, 30*30*6);
         glDisableVertexAttribArray(1);
         glDisableVertexAttribArray(1);
-
+//*/
         // Update Input & Graphics
         glfwPollEvents();
         glfwSwapBuffers(window);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
     return 0;
 }
@@ -373,8 +386,10 @@ GLuint loadTexture(const char* fileLoc)
 
 GLfloat *genTerrainData(int *count, int width, int height)
 {
-    *count = 5 * (width) * 6 * height * 4;
+    *count = 5 * (width) * 6 * height;
     GLfloat *data = (GLfloat*)malloc(sizeof(GLfloat) * *count);
+
+    printf("Width: %d, Height: %d\n", width, height);
 
     if( data == NULL )
     {
@@ -383,9 +398,10 @@ GLfloat *genTerrainData(int *count, int width, int height)
     }
 
     int idx = 0;
-    for (float y = -1.0f; y < 1.0f; y += 1.0f / height)
+    for (float y = -1.0f; y < 1.0f - (2.0f / height); y += 2.0f / height)
     {
-        for (float x = -1.0f; x < 1.0f; x += 1.0f / width)
+        printf("row #: %f\n", y);
+        for (float x = -1.0f; x < 1.0f; x += 2.0f / width)
         {
             // x y z u v
             //
@@ -395,7 +411,7 @@ GLfloat *genTerrainData(int *count, int width, int height)
             //   2
             // 1 3
             data[idx + 0] = x;
-            data[idx + 1] = 0.0f;
+            data[idx + 1] = perlinNoise.GetValue(x, 0.0f, y);
             data[idx + 2] = y;
 
             data[idx + 3] = (x + 1.0f) / 2.0f;
@@ -404,47 +420,47 @@ GLfloat *genTerrainData(int *count, int width, int height)
             idx += 5;
 
             data[idx + 0] = x;
-            data[idx + 1] = 0.0f;
-            data[idx + 2] = y + 1.0f / height;
+            data[idx + 1] = perlinNoise.GetValue(x, 0.0f, y + 2.0f / height);
+            data[idx + 2] = y + 2.0f / height;
 
             data[idx + 3] = (x + 1.0f) / 2.0f;
-            data[idx + 4] = (y + 1.0f + (1.0f / height)) / 2.0f;
+            data[idx + 4] = (y + 1.0f + (2.0f / height)) / 2.0f;
 
             idx += 5;
 
-            data[idx + 0] = x + 1.0f / width;
-            data[idx + 1] = 0.0f;
+            data[idx + 0] = x + 2.0f / width;
+            data[idx + 1] = perlinNoise.GetValue(x + 2.0f / width, 0.0f, y);
             data[idx + 2] = y;
 
-            data[idx + 3] = (x + 1.0f + (1.0f / width)) / 2.0f;
+            data[idx + 3] = (x + 1.0f + (2.0f / width)) / 2.0f;
             data[idx + 4] = (y + 1.0f) / 2.0f;
 
             idx += 5;
 
             data[idx + 0] = x;
-            data[idx + 1] = 0.0f;
-            data[idx + 2] = y + 1.0f / height;
+            data[idx + 1] = perlinNoise.GetValue(x, 0.0f, y + 2.0f / height);
+            data[idx + 2] = y + 2.0f / height;
 
             data[idx + 3] = (x + 1.0f) / 2.0f;
-            data[idx + 4] = (y + 1.0f + (1.0f / height)) / 2.0f;
+            data[idx + 4] = (y + 1.0f + (2.0f / height)) / 2.0f;
 
             idx += 5;
 
-            data[idx + 0] = x + 1.0f / width;
-            data[idx + 1] = 0.0f;
+            data[idx + 0] = x + 2.0f / width;
+            data[idx + 1] = perlinNoise.GetValue(x + 2.0f / width, 0.0f, y);
             data[idx + 2] = y;
 
-            data[idx + 3] = (x + 1.0f + (1.0f / width)) / 2.0f;
+            data[idx + 3] = (x + 1.0f + (2.0f / width)) / 2.0f;
             data[idx + 4] = (y + 1.0f) / 2.0f;
 
             idx += 5;
 
-            data[idx + 0] = x + 1.0f / width;
-            data[idx + 1] = 0.0f;
-            data[idx + 2] = y + 1.0f / height;
+            data[idx + 0] = x + 2.0f / width;
+            data[idx + 1] = perlinNoise.GetValue(x + 2.0f / width, 0.0f, y + 2.0f / height);
+            data[idx + 2] = y + 2.0f / height;
 
-            data[idx + 3] = (x + 1.0f + (1.0f / width)) / 2.0f;
-            data[idx + 4] = (y + 1.0f + (1.0f / height)) / 2.0f;
+            data[idx + 3] = (x + 1.0f + (2.0f / width)) / 2.0f;
+            data[idx + 4] = (y + 1.0f + (2.0f / height)) / 2.0f;
 
             idx += 5;
 
