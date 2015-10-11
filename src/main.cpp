@@ -1,25 +1,45 @@
+#define GLM_FORCE_RADIANS
+
 #include <stdio.h>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <FreeImage.h>
+#include <glm/glm.hpp>
+#include <glm/gtx/rotate_vector.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include <iostream>
 #include <fstream>
 #include <string>
 
-GLFWwindow *window;
-GLuint mainShader;
-
-GLuint waterVAO;
-GLuint waterVBO;
-
-// Declare some functions
+#include "Camera.h"
 
 GLuint loadShader(const char* vertLoc, const char* fragLoc);
+GLuint loadTexture(const char* fileLoc);
 void APIENTRY GLDebugMessageCallback(GLenum source, GLenum type, GLuint id,
                             GLenum severity, GLsizei length,
                             const GLchar *msg, void *data);
 int main(int argc, char** argv)
 {
+
+    glm::mat4 projectionMatrix;
+
+    GLFWwindow *window;
+    GLuint mainShader;
+    GLuint waterShader;
+
+    Camera *camera;
+
+    GLuint waterVAO;
+    GLuint waterVBO;
+
+    GLuint waterTex;
+    GLuint waterMap;
+
+    double elapsedTime;
+    // Declare some functions
+
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
@@ -32,15 +52,27 @@ int main(int argc, char** argv)
 
     glewInit();
 
+    camera = new Camera(window);
+
     glEnable(GL_DEBUG_OUTPUT);
     glDebugMessageCallback(GLDebugMessageCallback, NULL);
 
-    mainShader = loadShader("vert.glsl", "frag.glsl");
+    projectionMatrix = glm::perspective(45.0f, 1920.0f/1080.0f, 0.01f, 100.0f);
 
-    glUseProgram(mainShader);
+    mainShader = loadShader("vert.glsl", "frag.glsl");
+    waterShader = loadShader("water.vert.glsl", "water.frag.glsl");
+    mainShader = loadShader("vert.glsl", "frag.glsl");
+    glUseProgram(waterShader);
 
     glClearColor(100.0f/ 255.0f, 149.0f/255.0f, 237.0f/255.0f, 1.0f);
 
+    waterMap = loadTexture("wave.jpg");
+    waterTex = loadTexture("pebbles2.jpg");
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, waterMap);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, waterTex);
 
     glGenVertexArrays(1, &waterVAO);
     glBindVertexArray(waterVAO);
@@ -51,15 +83,16 @@ int main(int argc, char** argv)
     GLfloat waterQuad[6*5] =
     {
         // x y z u v
-        -1.0f, -1.0f, +0.0f, +0.0f, +0.0f,
-        -1.0f, +1.0f, +0.0f, +0.0f, +1.0f,
-        +1.0f, +1.0f, +0.0f, +1.0f, +1.0f,
+        -1.0f, +0.0f, -1.0f, +0.0f, +0.0f,
+        -1.0f, +0.0f, +1.0f, +0.0f, +1.0f,
+        +1.0f, +0.0f, +1.0f, +1.0f, +1.0f,
 
-        +1.0f, +1.0f, +0.0f, +1.0f, +1.0f,
-        +1.0f, -1.0f, +0.0f, +1.0f, +0.0f,
-        -1.0f, -1.0f, +0.0f, +0.0f, +0.0f,
+        +1.0f, +0.0f, +1.0f, +1.0f, +1.0f,
+        +1.0f, +0.0f, -1.0f, +1.0f, +0.0f,
+        -1.0f, +0.0f, -1.0f, +0.0f, +0.0f,
     };
-    glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 6  * 5, waterQuad, GL_STATIC_DRAW);
+
+    glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 6 * 5, waterQuad, GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
@@ -67,8 +100,15 @@ int main(int argc, char** argv)
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 5, (const GLvoid*)(sizeof(GLfloat) * 3));
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(1);
+
+    glUniformMatrix4fv(
+        glGetUniformLocation(waterShader, "projectionMatrix"),
+        1,
+        GL_FALSE,
+        glm::value_ptr(projectionMatrix));
     while (!glfwWindowShouldClose(window))
     {
+
         int count;
         const unsigned char* buttons = glfwGetJoystickButtons(GLFW_JOYSTICK_1, &count);
 
@@ -77,6 +117,33 @@ int main(int argc, char** argv)
         {
             break;
         }
+        const float* axes = glfwGetJoystickAxes(GLFW_JOYSTICK_1, &count);
+
+        float x_axis = axes[6];
+        float y_axis = axes[7];
+
+        //glm::vec3 vel = glm::vec3(x_axis, y_axis, 0.0f);
+	    //glm::vec3 direction = glm::vec3(camera.rotMat * glm::vec4(vel, 1.0f));
+        //camera.position += direction;
+        //camera.rotation.x += 0.0001f;
+        //
+        camera->Update(glfwGetTime());
+        elapsedTime += glfwGetTime();
+        glfwSetTime(0.0f);
+
+        glm::mat4 viewMatrix = camera->ViewMat();
+
+        glUniformMatrix4fv(
+            glGetUniformLocation(waterShader, "viewMatrix"),
+            1,
+            GL_FALSE,
+            glm::value_ptr(viewMatrix));
+        glUniform3f(
+            glGetUniformLocation(waterShader, "texOffset"),
+            elapsedTime,
+            elapsedTime,
+            0.0f);
+        printf("%f\n", glfwGetTime());
 
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
@@ -133,9 +200,9 @@ void APIENTRY GLDebugMessageCallback(GLenum source, GLenum type, GLuint id,
                             GLenum severity, GLsizei length,
                             const GLchar *msg, void *data)
 {
-    char* _source;
-    char* _type;
-    char* _severity;
+    const char* _source;
+    const char* _type;
+    const char* _severity;
 
     switch (source) {
         case GL_DEBUG_SOURCE_API:
@@ -225,4 +292,34 @@ void APIENTRY GLDebugMessageCallback(GLenum source, GLenum type, GLuint id,
 
     printf("%d: %s of %s severity, raised from %s: %s\n",
             id, _type, _severity, _source, msg);
+}
+
+GLuint loadTexture(const char* fileLoc)
+{
+	GLuint texture;
+
+	FIBITMAP* bitmap = FreeImage_Load(
+		FreeImage_GetFileType(fileLoc, 0),
+		fileLoc);
+
+	FIBITMAP* pImage;
+
+	pImage = FreeImage_ConvertTo32Bits(bitmap);
+
+	glActiveTexture(GL_TEXTURE0);
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, FreeImage_GetWidth(pImage), FreeImage_GetHeight(pImage),
+		0, GL_BGRA, GL_UNSIGNED_BYTE, static_cast<void*>(FreeImage_GetBits(pImage)));
+
+	FreeImage_Unload(bitmap);
+	FreeImage_Unload(pImage);
+
+	return texture;
 }

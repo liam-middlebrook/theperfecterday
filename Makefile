@@ -1,2 +1,2 @@
 all:
-	g++ src/*.cpp -lGL -lGLEW -lglfw -o theperfecterday --std=c++11 -ggdb
+	g++ src/*.cpp -lGL -lGLEW -lglfw -lfreeimage -o theperfecterday --std=c++11 -ggdb
