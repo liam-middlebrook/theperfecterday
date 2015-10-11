@@ -30,7 +30,9 @@
 // lava bath.
 // As I imagine the original The Perfect Day was written in only two Unity C#
 // class files, so The Perfecter Day naturally only has two files that it is
-// split into.
+// split into. Also because this is the spiritual successor to The Perfect Day,
+// I'm going to go to Chipolte to think about what I've done to myself and the
+// world.
 
     noise::module::Perlin perlinNoise;
 GLuint loadShader(const char* vertLoc, const char* fragLoc);
