@@ -8,6 +8,7 @@
 #include <glm/gtx/rotate_vector.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/transform.hpp>
 
 #include <libnoise/noise.h>
 
@@ -84,11 +85,14 @@ int main(int argc, char** argv)
 
     waterMap = loadTexture("wave.jpg");
     waterTex = loadTexture("pebbles2.jpg");
+    terrainTex = loadTexture("grass.jpg");
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, waterMap);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, waterTex);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, terrainTex);
 
     glGenVertexArrays(1, &waterVAO);
     glBindVertexArray(waterVAO);
@@ -126,7 +130,7 @@ int main(int argc, char** argv)
     GLfloat *terrainData;
     int terrainDataCount;
 
-    terrainData = genTerrainData(&terrainDataCount, 5, 30);
+    terrainData = genTerrainData(&terrainDataCount, 20, 30);
 
     glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * terrainDataCount, terrainData, GL_STATIC_DRAW);
 
@@ -138,13 +142,30 @@ int main(int argc, char** argv)
         1,
         GL_FALSE,
         glm::value_ptr(projectionMatrix));
-
+    glm::mat4 scale = glm::mat4(100.0f ,0.0f, 0.0f, 0.0f,
+                                0.0f, 1.0f, 0.0f, 0.0f,
+                                0.0f, 0.0f, 100.0f, 0.0f,
+                                0.0f, 0.0f, 0.0f, 1.0f);
+    glUniformMatrix4fv(
+        glGetUniformLocation(waterShader, "modelMatrix"),
+        1,
+        GL_FALSE,
+        glm::value_ptr(scale));
     glUseProgram(mainShader);
     glUniformMatrix4fv(
         glGetUniformLocation(mainShader, "projectionMatrix"),
         1,
         GL_FALSE,
         glm::value_ptr(projectionMatrix));
+    scale = glm::mat4(75.0f ,0.0f, 0.0f, 0.0f,
+                                0.0f, 5.0f, 0.0f, 0.0f,
+                                0.0f, 0.0f, 75.0f, 0.0f,
+                                0.0f, 0.0f, 0.0f, 1.0f);
+    glUniformMatrix4fv(
+        glGetUniformLocation(mainShader, "modelMatrix"),
+        1,
+        GL_FALSE,
+        glm::value_ptr(scale));
     while (!glfwWindowShouldClose(window))
     {
 
@@ -207,7 +228,7 @@ int main(int argc, char** argv)
         glEnableVertexAttribArray(1);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 5, 0);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 5, (const GLvoid*)(sizeof(GLfloat) * 3));
-        glDrawArrays(GL_TRIANGLES, 0, 30*30*6);
+        glDrawArrays(GL_TRIANGLES, 0, 30*30*6*5);
         glDisableVertexAttribArray(1);
         glDisableVertexAttribArray(1);
 //*/
@@ -389,18 +410,18 @@ GLfloat *genTerrainData(int *count, int width, int height)
     *count = 5 * (width) * 6 * height;
     GLfloat *data = (GLfloat*)malloc(sizeof(GLfloat) * *count);
 
-    printf("Width: %d, Height: %d\n", width, height);
+    //printf("Width: %d, Height: %d\n", width, height);
 
     if( data == NULL )
     {
-        printf("FUCK\n");
+        //printf("FUCK\n");
         return 0;
     }
 
     int idx = 0;
     for (float y = -1.0f; y < 1.0f - (2.0f / height); y += 2.0f / height)
     {
-        printf("row #: %f\n", y);
+        //printf("row #: %f\n", y);
         for (float x = -1.0f; x < 1.0f; x += 2.0f / width)
         {
             // x y z u v
@@ -464,7 +485,7 @@ GLfloat *genTerrainData(int *count, int width, int height)
 
             idx += 5;
 
-            printf("%d out of %d\n", idx, *count);
+            //printf("%d out of %d\n", idx, *count);
         }
     }
     return data;

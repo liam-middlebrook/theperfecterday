@@ -6,11 +6,12 @@ layout(location=1) in vec2 uv;
 uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
 
+uniform mat4 modelMatrix;
 varying vec2 texCoord;
 
 void main()
 {
-	gl_Position = projectionMatrix * viewMatrix * vec4(position, 1.0);
+	gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0);
     //vec2 noiseMix = noise(position.xz);
     //gl_Position.y = noiseMix.x * noiseMix.y;
 	texCoord = uv;
