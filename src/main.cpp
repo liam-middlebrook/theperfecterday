@@ -18,10 +18,19 @@
 
 #include "Camera.h"
 
-// TODO: Get Terrain Generation Working
-//       Pivot to board game with 3D printed terrain
-//       Get maximum hacakthon points
-
+// The Perfecter Day: WAT?
+// The Perfecter Day is the spiritual successor/port of The Perfect Day by
+// ajman1101 (Andrew Mandule). It combines all of the best features of The
+// Perfect Day into one action-lacking adventure! As this is the spiritual
+// successor to The Perfect Day, you naturally play as a ghost. As a ghost you
+// don't need to worry about interacting with different objects in the world,
+// because that isn't how being a ghost fucking works. Due to the importance of
+// lava in the original The Perfect Day this game would be incomplete without
+// different opprotunities to submerge yourself in the warmth and love of a nice
+// lava bath.
+// As I imagine the original The Perfect Day was written in only two Unity C#
+// class files, so The Perfecter Day naturally only has two files that it is
+// split into.
 
     noise::module::Perlin perlinNoise;
 GLuint loadShader(const char* vertLoc, const char* fragLoc);
@@ -202,8 +211,8 @@ int main(int argc, char** argv)
             glm::value_ptr(viewMatrix));
         glUniform3f(
             glGetUniformLocation(waterShader, "texOffset"),
-            0.3f * elapsedTime,
-            0.4f * elapsedTime,
+            0.03f * elapsedTime,
+            0.04f * elapsedTime,
             0.0f);
         //printf("%f\n", glfwGetTime());
 
