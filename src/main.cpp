@@ -15,6 +15,10 @@
 
 #include "Camera.h"
 
+// TODO: Get Terrain Generation Working
+//       Pivot to board game with 3D printed terrain
+//       Get maximum hacakthon points
+
 GLuint loadShader(const char* vertLoc, const char* fragLoc);
 GLuint loadTexture(const char* fileLoc);
 void APIENTRY GLDebugMessageCallback(GLenum source, GLenum type, GLuint id,
@@ -109,18 +113,18 @@ int main(int argc, char** argv)
     while (!glfwWindowShouldClose(window))
     {
 
-        int count;
-        const unsigned char* buttons = glfwGetJoystickButtons(GLFW_JOYSTICK_1, &count);
+        //int count;
+        //const unsigned char* buttons = glfwGetJoystickButtons(GLFW_JOYSTICK_1, &count);
 
-        // Start button for quit game
-        if (buttons[7])
-        {
-            break;
-        }
-        const float* axes = glfwGetJoystickAxes(GLFW_JOYSTICK_1, &count);
+        //// Start button for quit game
+        //if (buttons[7])
+        //{
+        //    break;
+        //}
+        //const float* axes = glfwGetJoystickAxes(GLFW_JOYSTICK_1, &count);
 
-        float x_axis = axes[6];
-        float y_axis = axes[7];
+        //float x_axis = axes[6];
+        //float y_axis = axes[7];
 
         //glm::vec3 vel = glm::vec3(x_axis, y_axis, 0.0f);
 	    //glm::vec3 direction = glm::vec3(camera.rotMat * glm::vec4(vel, 1.0f));
@@ -140,8 +144,8 @@ int main(int argc, char** argv)
             glm::value_ptr(viewMatrix));
         glUniform3f(
             glGetUniformLocation(waterShader, "texOffset"),
-            elapsedTime,
-            elapsedTime,
+            0.3f * elapsedTime,
+            0.4f * elapsedTime,
             0.0f);
         printf("%f\n", glfwGetTime());
 

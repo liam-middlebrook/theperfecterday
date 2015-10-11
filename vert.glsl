@@ -3,9 +3,13 @@
 layout(location=0) in vec3 position;
 layout(location=1) in vec2 uv;
 
-out vec2 UV;
+uniform mat4 viewMatrix;
+uniform mat4 projectionMatrix;
 
-void main() {
-    gl_Position = vec4(position, 1.0);
-    UV = uv;
+varying vec2 texCoord;
+
+void main()
+{
+	gl_Position = projectionMatrix * viewMatrix * vec4(position, 1.0);
+	texCoord = uv;
 }
