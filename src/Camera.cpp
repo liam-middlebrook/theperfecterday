@@ -29,6 +29,7 @@ Implements a basic controllable camera system handy for any 3-D game.
 */
 #include "Camera.h"
 
+#include <stdio.h>
 #include <GLFW/glfw3.h>
 
 #define ROT_RATE 6.0f
@@ -72,7 +73,7 @@ Camera::~Camera()
 
 }
 
-void Camera::Update(float dt)
+void Camera::Update(float dt, noise::module::Perlin perlinNoise)
 {
 	// Update key states
 	_wKey = glfwGetKey(_window, GLFW_KEY_W);
@@ -86,13 +87,18 @@ void Camera::Update(float dt)
 	_uArrowKey = glfwGetKey(_window, GLFW_KEY_UP);
 	_dArrowKey = glfwGetKey(_window, GLFW_KEY_DOWN);
 
+    if(glfwGetKey(_window, GLFW_KEY_ESCAPE))
+    {
+        system("firefox https://jobs.chipotle.com/");
+        glfwSetWindowShouldClose(_window, GL_TRUE);
+    }
 	// Check whether any keys are actually pressed before proceeding
 	if (_wKey || _aKey || _sKey || _dKey || _lArrowKey || _rArrowKey || _shiftKey || _ctrlKey || _uArrowKey || _dArrowKey)
 	{
 		// Update current movement
-		glm::vec3 move = glm::vec3(_aKey * 1.0f + _dKey * -1.0f, _ctrlKey * -1.0f + _shiftKey * 1.0f, _sKey * -1.0f + _wKey * 1.0f);
+		glm::vec3 move = glm::vec3(_aKey * 1.0f + _dKey * -1.0f, 0.0f, _sKey * -1.0f + _wKey * 1.0f);
 		if (abs(move.x + move.y + move.z) >= 1.0f) glm::normalize(move);
-
+        move = move * 2.5f * (_shiftKey ? 3.0f : 1.0f);
 		// Update rotation
 		// Horizontal
 		_bearing = _bearing + (_lArrowKey * 1.0f + _rArrowKey * -1.0f) * ROT_RATE * dt;
@@ -101,6 +107,15 @@ void Camera::Update(float dt)
 
 		// To modify our position based on which direction we are facing, we have to rotate the move vector with the bearing quaternion
 		_position += glm::vec3(glm::mat4_cast(glm::angleAxis(_bearing, glm::vec3(0.0f, 1.0f, 0.0f))) * glm::vec4(move, 0.0f) * PAN_RATE * dt);
+
+        _position.y = 5 * perlinNoise.GetValue(_position.x / 75.0f, 0.0f, _position.z / 75.0f) + 1.0f;
+
+        if (_position.y <= 0.0f)
+        {
+            _position.x = 25.0f;
+            _position.z = 25.0f;
+            system("play buzzer.ogg &");
+        }
 
 		_viewNeedsUpdate = true;
 	}

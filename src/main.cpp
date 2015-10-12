@@ -198,7 +198,7 @@ int main(int argc, char** argv)
         //camera.position += direction;
         //camera.rotation.x += 0.0001f;
         //
-        camera->Update(glfwGetTime());
+        camera->Update(glfwGetTime(), perlinNoise);
         elapsedTime += glfwGetTime();
         glfwSetTime(0.0f);
 

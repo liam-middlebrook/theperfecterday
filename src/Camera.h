@@ -5,6 +5,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 
+#include <libnoise/noise.h>
 class Camera
 {
 public:
@@ -12,7 +13,7 @@ public:
 	~Camera();
 
 	// Checks all of the current keyboard input and adjusts the view matrix accordingly
-	void Update(float dt);
+	void Update(float dt, noise::module::Perlin perlinNoise);
 	// Perspective view
 	void SetProjMatrix(float fov, float near, float far, float aspectRatio);
 	// Orthographic view
