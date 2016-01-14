@@ -16,7 +16,7 @@
 #include <fstream>
 #include <string>
 
-#include "Camera.h"
+#include "camera.h"
 
 // The Perfecter Day: WAT?
 // The Perfecter Day is the spiritual successor/port of The Perfect Day by
@@ -33,12 +33,13 @@
 // split into. Also because this is the spiritual successor to The Perfect Day,
 // I'm going to go to Chipolte to think about what I've done to myself and the
 // world.
-
     noise::module::Perlin perlinNoise;
 GLuint loadShader(const char* vertLoc, const char* fragLoc);
 GLuint loadTexture(const char* fileLoc);
 GLfloat *genTerrainData(int *count, int width, int height);
+void initSound(std::string file, std::string name);
 
+    GLFWwindow *window;
 void APIENTRY GLDebugMessageCallback(GLenum source, GLenum type, GLuint id,
                             GLenum severity, GLsizei length,
                             const GLchar *msg, void *data);
@@ -47,11 +48,8 @@ int main(int argc, char** argv)
 
     glm::mat4 projectionMatrix;
 
-    GLFWwindow *window;
     GLuint mainShader;
     GLuint waterShader;
-
-    Camera *camera;
 
     GLuint waterVAO;
     GLuint waterVBO;
@@ -64,7 +62,6 @@ int main(int argc, char** argv)
 
     GLuint terrainTex;
 
-    double elapsedTime;
     // Declare some functions
 
     glfwInit();
@@ -79,14 +76,10 @@ int main(int argc, char** argv)
 
     glewInit();
 
-    camera = new Camera(window);
-
     glEnable(GL_DEPTH_TEST);
 
     glEnable(GL_DEBUG_OUTPUT);
     glDebugMessageCallback(GLDebugMessageCallback, NULL);
-
-    projectionMatrix = glm::perspective(45.0f, 1920.0f/1080.0f, 0.01f, 100.0f);
 
     mainShader = loadShader("vert.glsl", "frag.glsl");
     waterShader = loadShader("water.vert.glsl", "water.frag.glsl");
@@ -148,11 +141,6 @@ int main(int argc, char** argv)
     free(terrainData);
 
     glUseProgram(waterShader);
-    glUniformMatrix4fv(
-        glGetUniformLocation(waterShader, "projectionMatrix"),
-        1,
-        GL_FALSE,
-        glm::value_ptr(projectionMatrix));
     glm::mat4 scale = glm::mat4(100.0f ,0.0f, 0.0f, 0.0f,
                                 0.0f, 1.0f, 0.0f, 0.0f,
                                 0.0f, 0.0f, 100.0f, 0.0f,
@@ -163,11 +151,6 @@ int main(int argc, char** argv)
         GL_FALSE,
         glm::value_ptr(scale));
     glUseProgram(mainShader);
-    glUniformMatrix4fv(
-        glGetUniformLocation(mainShader, "projectionMatrix"),
-        1,
-        GL_FALSE,
-        glm::value_ptr(projectionMatrix));
     scale = glm::mat4(75.0f ,0.0f, 0.0f, 0.0f,
                                 0.0f, 5.0f, 0.0f, 0.0f,
                                 0.0f, 0.0f, 75.0f, 0.0f,
@@ -177,6 +160,10 @@ int main(int argc, char** argv)
         1,
         GL_FALSE,
         glm::value_ptr(scale));
+
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwPollEvents();
+    glfwSetCursorPos(window, win_width / 2, win_height / 2);
     while (!glfwWindowShouldClose(window))
     {
 
@@ -198,14 +185,20 @@ int main(int argc, char** argv)
         //camera.position += direction;
         //camera.rotation.x += 0.0001f;
         //
-        camera->Update(glfwGetTime(), perlinNoise);
-        elapsedTime += glfwGetTime();
-        glfwSetTime(0.0f);
-
-        glm::mat4 viewMatrix = camera->ViewMat();
+        glm::vec3 position = getPosition();
+        position.y = 5 * perlinNoise.GetValue(position.x / 75.0f, 0.0f, position.z / 75.0f) + 1.0f;
+        setPosition(position);
+        camera_update();
+        projectionMatrix = getProjMat();
+        glm::mat4 viewMatrix = getViewMat();
 
         glUseProgram(waterShader);
 
+    glUniformMatrix4fv(
+        glGetUniformLocation(waterShader, "projectionMatrix"),
+        1,
+        GL_FALSE,
+        glm::value_ptr(projectionMatrix));
         glUniformMatrix4fv(
             glGetUniformLocation(waterShader, "viewMatrix"),
             1,
@@ -213,8 +206,8 @@ int main(int argc, char** argv)
             glm::value_ptr(viewMatrix));
         glUniform3f(
             glGetUniformLocation(waterShader, "texOffset"),
-            0.03f * elapsedTime,
-            0.04f * elapsedTime,
+            0.03f * glfwGetTime(),
+            0.04f * glfwGetTime(),
             0.0f);
         //printf("%f\n", glfwGetTime());
 
@@ -229,6 +222,11 @@ int main(int argc, char** argv)
         glDisableVertexAttribArray(1);
 
         glUseProgram(mainShader);
+    glUniformMatrix4fv(
+        glGetUniformLocation(mainShader, "projectionMatrix"),
+        1,
+        GL_FALSE,
+        glm::value_ptr(projectionMatrix));
         glUniformMatrix4fv(
             glGetUniformLocation(mainShader, "viewMatrix"),
             1,
@@ -244,8 +242,8 @@ int main(int argc, char** argv)
         glDisableVertexAttribArray(1);
 //*/
         // Update Input & Graphics
-        glfwPollEvents();
         glfwSwapBuffers(window);
+        glfwPollEvents();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
     return 0;
