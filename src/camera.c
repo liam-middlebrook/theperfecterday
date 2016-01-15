@@ -37,16 +37,13 @@ void camera_update() {
 
     double time = glfwGetTime();
     float deltaTime = float(time - prevTime);
-    printf("time: %f\n", time);
     double xPos, yPos;
     glfwGetCursorPos(window, &xPos, &yPos);
-    printf("xPos: %f, yPos: %f\n", xPos, yPos);
     glfwSetCursorPos(window, win_width / 2, win_height / 2);
 
     horizAngle += mouseSpeed * float(win_width / 2 - xPos);
     vertAngle += mouseSpeed * float(win_height / 2 - yPos);
 
-    printf("horiz: %f, vert: %f\n", horizAngle, vertAngle);
     glm::vec3 direction(
         cos(vertAngle) * sin(horizAngle),
         sin(vertAngle),
