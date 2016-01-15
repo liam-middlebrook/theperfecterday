@@ -62,6 +62,7 @@ int main(int argc, char** argv)
 
     GLuint terrainTex;
 
+    GLuint pebbleTex;
     // Declare some functions
 
     glfwInit();
@@ -88,8 +89,9 @@ int main(int argc, char** argv)
     glClearColor(100.0f/ 255.0f, 149.0f/255.0f, 237.0f/255.0f, 1.0f);
 
     waterMap = loadTexture("wave.jpg");
-    waterTex = loadTexture("pebbles2.jpg");
+    waterTex = loadTexture("lava.jpg");
     terrainTex = loadTexture("grass.jpg");
+    pebbleTex = loadTexture("pebbles.jpg");
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, waterMap);
@@ -97,6 +99,8 @@ int main(int argc, char** argv)
     glBindTexture(GL_TEXTURE_2D, waterTex);
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, terrainTex);
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, pebbleTex);
 
     glGenVertexArrays(1, &waterVAO);
     glBindVertexArray(waterVAO);
